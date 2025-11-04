@@ -1,0 +1,261 @@
+import React, { useState, useEffect } from "react";
+
+export default function TrendyClosetStore() {
+  const initialProducts = [
+    { id: 1, title: "Classic White T‑Shirt", price: 499, category: "T-Shirts", img: "https://picsum.photos/seed/t1/600/400" },
+    { id: 2, title: "Denim Jacket", price: 2599, category: "Jackets", img: "https://picsum.photos/seed/j1/600/400" },
+    { id: 3, title: "Slim Fit Jeans", price: 1299, category: "Jeans", img: "https://picsum.photos/seed/je1/600/400" },
+    { id: 4, title: "Summer Hoodie", price: 999, category: "Hoodies", img: "https://picsum.photos/seed/h1/600/400" },
+    { id: 5, title: "Formal Shirt", price: 899, category: "Shirts", img: "https://picsum.photos/seed/s1/600/400" },
+    { id: 6, title: "Chino Shorts", price: 599, category: "Shorts", img: "https://picsum.photos/seed/sh1/600/400" },
+    { id: 7, title: "Printed Polo", price: 749, category: "T-Shirts", img: "https://picsum.photos/seed/p1/600/400" },
+    { id: 8, title: "Leather Belt", price: 349, category: "Accessories", img: "https://picsum.photos/seed/a1/600/400" }
+  ];
+
+  const [products] = useState(initialProducts);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("All");
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("tc_cart")) || [];
+    } catch {
+      return [];
+    }
+  });
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [customer, setCustomer] = useState({ name: "", email: "", phone: "", address: "" });
+  const categories = ["All", ...Array.from(new Set(initialProducts.map(p => p.category)))];
+
+  useEffect(() => {
+    localStorage.setItem("tc_cart", JSON.stringify(cart));
+  }, [cart]);
+
+  function addToCart(product) {
+    setCart(prev => {
+      const found = prev.find(i => i.id === product.id);
+      if (found) return prev.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { ...product, qty: 1 }];
+    });
+  }
+
+  function updateQty(id, qty) {
+    if (qty <= 0) return removeFromCart(id);
+    setCart(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
+  }
+
+  function removeFromCart(id) {
+    setCart(prev => prev.filter(i => i.id !== id));
+  }
+
+  const subtotal = cart.reduce((s, it) => s + it.price * it.qty, 0);
+  const shipping = subtotal > 1999 || subtotal === 0 ? 0 : 99;
+  const total = subtotal + shipping;
+
+  const filtered = products.filter(p => {
+    const matchesQuery = p.title.toLowerCase().includes(query.toLowerCase());
+    const matchesCat = category === "All" || p.category === category;
+    return matchesQuery && matchesCat;
+  });
+
+  function startCheckout() {
+    if (cart.length === 0) return alert("Your cart is empty.");
+    setCheckoutOpen(true);
+  }
+
+  function mockPay(e) {
+    e.preventDefault();
+    // Mock payment flow — replace with real gateway integration (Razorpay / Stripe)
+    const order = {
+      id: Math.floor(Math.random() * 1000000),
+      name: customer.name || "Guest",
+      email: customer.email,
+      phone: customer.phone,
+      amount: total,
+      items: cart
+    };
+
+    // Simulate payment success
+    setTimeout(() => {
+      alert(`Payment successful! Order #${order.id} — ₹${order.amount}`);
+      setCart([]);
+      localStorage.removeItem("tc_cart");
+      setCheckoutOpen(false);
+      setCustomer({ name: "", email: "", phone: "", address: "" });
+    }, 500);
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900">
+      <header className="bg-white shadow">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-violet-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">TC</div>
+            <div>
+              <h1 className="text-xl font-extrabold">Trendy Closet</h1>
+              <p className="text-xs text-gray-500">Men's fashion • All styles</p>
+            </div>
+          </div>
+
+          <nav className="flex items-center gap-4">
+            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search products..." className="border rounded px-3 py-1 text-sm" />
+            <select value={category} onChange={e => setCategory(e.target.value)} className="border rounded px-2 py-1 text-sm">
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <button onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })} className="text-sm">Contact</button>
+            <button onClick={() => document.getElementById('cartBtn').click()} id="cartBtn" className="relative">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
+              </svg>
+              {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{cart.length}</span>}
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <section className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <div className="md:col-span-2">
+            <div className="rounded-lg overflow-hidden shadow bg-gradient-to-r from-violet-50 to-pink-50 p-6">
+              <h2 className="text-3xl font-extrabold">Welcome to Trendy Closet</h2>
+              <p className="mt-2 text-gray-600">All styles for men — casual, formal, sporty, and avant-garde. Shop curated looks for every mood.</p>
+              <div className="mt-4 flex gap-3">
+                <button onClick={() => window.scrollTo({ top: 1000, behavior: 'smooth' })} className="px-4 py-2 rounded bg-pink-500 text-white font-semibold">Shop Now</button>
+                <button onClick={() => alert('We offer fast delivery across India.')} className="px-4 py-2 rounded border">Delivery Info</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-bold">Top picks</h3>
+            <ul className="mt-2 text-sm text-gray-600 space-y-2">
+              <li>Minimal Everyday Tees</li>
+              <li>Layer-ready Jackets</li>
+              <li>Comfort-first Jeans</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-2xl font-bold mb-4">Products</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filtered.map(p => (
+              <div key={p.id} className="bg-white rounded-lg shadow overflow-hidden">
+                <img src={p.img} alt={p.title} className="w-full h-44 object-cover" />
+                <div className="p-3">
+                  <h4 className="font-semibold">{p.title}</h4>
+                  <p className="text-sm text-gray-500">{p.category}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="font-bold">₹{p.price}</div>
+                    <button onClick={() => addToCart(p)} className="px-3 py-1 rounded bg-violet-600 text-white text-sm">Add</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <h3 className="text-xl font-bold mb-3">Why shop with us?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+            <div className="p-4 bg-white rounded shadow">Fast shipping • Easy returns</div>
+            <div className="p-4 bg-white rounded shadow">Secure payments • Cash on delivery available</div>
+            <div className="p-4 bg-white rounded shadow">Curated styles • New arrivals weekly</div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-white mt-12 border-t">
+        <div className="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-600">
+          © {new Date().getFullYear()} Trendy Closet — Built with ❤️
+        </div>
+      </footer>
+
+      {/* Cart Drawer */}
+      <div className="fixed right-4 bottom-4 z-50">
+        <button onClick={() => document.getElementById('openCartModal').click()} className="bg-violet-600 text-white px-4 py-2 rounded shadow">Cart ({cart.reduce((s,i)=>s+i.qty,0)})</button>
+      </div>
+
+      {/* Hidden elements and modals (simple implementations) */}
+      <div style={{ display: 'none' }}>
+        <button id="openCartModal" onClick={() => {
+          const modal = document.getElementById('tc-cart-modal');
+          if (modal) modal.style.display = 'block';
+        }}>Open Cart</button>
+      </div>
+
+      <div id="tc-cart-modal" style={{ display: 'none' }} className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50">
+        <div className="bg-white w-full md:w-3/4 lg:w-1/2 rounded-t-lg md:rounded-lg p-4 max-h-[90vh] overflow-auto">
+          <div className="flex justify-between items-center">
+            <h4 className="font-bold">Your Cart</h4>
+            <button onClick={() => document.getElementById('tc-cart-modal').style.display = 'none'} className="text-gray-500">Close</button>
+          </div>
+
+          <div className="mt-4 space-y-4">
+            {cart.length === 0 && <div className="text-gray-500">Cart is empty.</div>}
+            {cart.map(item => (
+              <div key={item.id} className="flex items-center gap-3 border rounded p-2">
+                <img src={item.img} alt="" className="w-16 h-16 object-cover rounded" />
+                <div className="flex-1">
+                  <div className="font-semibold">{item.title}</div>
+                  <div className="text-sm text-gray-500">₹{item.price} • Qty: <input value={item.qty} onChange={e => updateQty(item.id, parseInt(e.target.value||0))} className="w-12 border rounded text-center" type="number" /></div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold">₹{item.price * item.qty}</div>
+                  <button onClick={() => removeFromCart(item.id)} className="text-sm text-red-500 mt-2">Remove</button>
+                </div>
+              </div>
+            ))}
+
+            {cart.length > 0 && (
+              <div className="border-t pt-4">
+                <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span></div>
+                <div className="flex justify-between font-bold mt-2"><span>Total</span><span>₹{total}</span></div>
+                <div className="mt-4 flex gap-2">
+                  <button onClick={() => { document.getElementById('tc-cart-modal').style.display = 'none'; startCheckout(); }} className="px-4 py-2 rounded bg-green-600 text-white">Checkout</button>
+                  <button onClick={() => { setCart([]); localStorage.removeItem('tc_cart'); }} className="px-4 py-2 rounded border">Clear</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Checkout Modal */}
+      {checkoutOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="bg-white w-full max-w-2xl rounded p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Checkout</h3>
+              <button onClick={() => setCheckoutOpen(false)} className="text-gray-500">Close</button>
+            </div>
+
+            <form onSubmit={mockPay} className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input required value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} placeholder="Full name" className="border rounded px-3 py-2" />
+                <input required value={customer.email} onChange={e => setCustomer({...customer, email: e.target.value})} placeholder="Email" className="border rounded px-3 py-2" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input required value={customer.phone} onChange={e => setCustomer({...customer, phone: e.target.value})} placeholder="Phone" className="border rounded px-3 py-2" />
+                <input required value={customer.address} onChange={e => setCustomer({...customer, address: e.target.value})} placeholder="Shipping address" className="border rounded px-3 py-2" />
+              </div>
+
+              <div className="pt-2 border-t">
+                <div className="flex justify-between"><span>Items</span><span>₹{subtotal}</span></div>
+                <div className="flex justify-between"><span>Shipping</span><span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span></div>
+                <div className="flex justify-between font-bold mt-2"><span>Total</span><span>₹{total}</span></div>
+              </div>
+
+              <div className="flex gap-2 mt-3">
+                <button type="submit" className="px-4 py-2 rounded bg-blue-600 text-white">Pay ₹{total}</button>
+                <button type="button" onClick={() => setCheckoutOpen(false)} className="px-4 py-2 rounded border">Cancel</button>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-2">Note: This demo uses a mock payment flow. To accept real payments, integrate Razorpay/Stripe and replace <code>mockPay</code> with your payment handler.</p>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
